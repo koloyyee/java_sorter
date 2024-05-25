@@ -5,6 +5,7 @@
 Idea: Python is the default automation language , however I want to challenge myself to achieve similar functionality in Java.
 ## ⚠️⚠️⚠️WARNING! ⚠️⚠️⚠️
 #### ⚠️only support MacOS, maybe Linux, probably not Windows yet.⚠️
+**This repo is only for learning purposes**
 ### Goal:
 A directory watch that group file by file type.
 - image folder
