@@ -1,4 +1,4 @@
-# FileSorter, a take on automation in Java
+# Sorter, a take on automation in Java
 
 ## Java Automate file grouping
 
