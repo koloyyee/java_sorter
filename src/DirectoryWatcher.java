@@ -24,7 +24,13 @@ import static java.nio.file.StandardWatchEventKinds.*;
  * then create an "images" directory if not exists on the Desktop for Mac (not sure about Windows and Linux yet).<br>
  * move the new images to the "images" directory.
  * </p>
- * <p>2. e.g.: <code>java Sorter -k CST </code></p>
+ * <p>2. e.g.: <code>java Sorter fromDir toDir </code></p>
+ * <p> fromDir is the where the system will register the directory,<br>
+ * <p> toDir is the destination
+ * if the directory is doesn't exist, system will create one.
+ * </p>
+ * </p>
+ * <p>2. e.g.: <code>java Sorter fromDir toDir -k CST </code></p>
  * -k Keyword that filename contains
  * <p> With the keyword flag new file contains keyword will be moved to directory with the keyword <br>
  * if the directory is doesn't exist, system will create one.
@@ -41,9 +47,10 @@ public class DirectoryWatcher {
 	private final Map<WatchKey, Path> keys;
 	private final Path home;
 	private final Path downloads;
+	private final Path desktop;
 	private boolean trace;
 	
-	public DirectoryWatcher(Path source, Path... dest) throws IOException {
+	public DirectoryWatcher(Path source) throws IOException {
 		this.watcher = FileSystems.getDefault().newWatchService();
 		this.keys = new HashMap<>();
 		register(source);
@@ -51,9 +58,8 @@ public class DirectoryWatcher {
 		
 		home = Path.of(System.getProperty("user.home"));
 		downloads = home.resolve("Downloads");
+		desktop = home.resolve("Desktop");
 	}
-	
-	;
 	
 	@SuppressWarnings("unchecked")
 	static <T> WatchEvent<T> cast(WatchEvent<?> event) {
@@ -81,15 +87,6 @@ public class DirectoryWatcher {
 	 */
 	private void registerAll(final Path dir) throws IOException {
 		Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
-			/**
-			 * Invoked for a directory before entries in the directory are visited.
-			 *
-			 * <p> Unless overridden, this method returns {@link FileVisitResult#CONTINUE
-			 * CONTINUE}.
-			 *
-			 * @param dir
-			 * @param attrs
-			 */
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 				register(dir);
@@ -103,7 +100,7 @@ public class DirectoryWatcher {
 	 * We will look at the source directory,<br>
 	 * then will move the file to the target directory or create target directory then move to it.
 	 */
-	void process() throws IOException {
+	void process(String keyword, Path specificDir) throws IOException {
 		for (; ; ) {
 			WatchKey key;
 			try {
@@ -141,10 +138,16 @@ public class DirectoryWatcher {
 					 *   <li>application/zip</li>
 					 * </ol>
 					 * */
-					if (fileType.contains("image")) {
+					if (fileType.contains("image") && specificDir == null) {
 						//TODO: move the newItem to a new "image" director, create the directory if it doesn't exist.
+							moveToImagesDir(newItem);
+					} else if ( !keyword.isEmpty() && newItem.getFileName().toString().contains(keyword)){
+						// TODO: move the newItem to a target directory, create the directory if it doesn't exist.
+					Path keywordDir = specificDir.resolve(keyword);
+						move(newItem, keywordDir);
+					} else {
+						move(newItem, specificDir);
 					}
-					// TODO: move the newItem to a target directory, create the directory if it doesn't exist.
 				}
 				
 				
@@ -187,12 +190,14 @@ public class DirectoryWatcher {
 			System.err.println(e.getMessage());
 		}
 	}
-	
+	/**
+	 * The default method with there are no arguments.
+	 * */
 	void moveToImagesDir(Path newImage) {
-		Path desktop = home.resolve("Desktop");
-		System.out.println(desktop);
 		Path imagesDir = desktop.resolve("images");
 		move(newImage, imagesDir);
 	}
 	
+	
+	;
 }
