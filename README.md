@@ -7,9 +7,8 @@ Idea: Python is the default automation language , however I want to challenge my
 ### Goal:
 A directory watch that group file by file type.
 - image folder
-- PDF folder
 - Or more specific like CST folder
-- 
+
 ### Usage: 
 1. `java src/Sorter`
    - Default - no args
