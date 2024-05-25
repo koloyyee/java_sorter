@@ -1,8 +1,11 @@
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
@@ -22,20 +25,22 @@ import static java.nio.file.StandardWatchEventKinds.*;
  * move the new images to the "images" directory.
  * </p>
  * <p>2. e.g.: <code>java Sorter -k CST </code></p>
- *		-k Keyword that filename contains
- *	<p> With the keyword flag new file contains keyword will be moved to directory with the keyword <br>
- *	if the directory is doesn't exist, system will create one.
- *  </p>
+ * -k Keyword that filename contains
+ * <p> With the keyword flag new file contains keyword will be moved to directory with the keyword <br>
+ * if the directory is doesn't exist, system will create one.
+ * </p>
  * <p>3. e.g.: <code>java Sorter -k CST -t CST</code></p>
- * 		-k Keyword
- * 		-t Target directory
- *	<p> With the keyword flag new file contains keyword will be moved to <strong>target</strong> directory<br>
- *	if the directory is doesn't exist, system will create one.
- *  </p>
+ * -k Keyword
+ * -t Target directory
+ * <p> With the keyword flag new file contains keyword will be moved to <strong>target</strong> directory<br>
+ * if the directory is doesn't exist, system will create one.
+ * </p>
  */
 public class DirectoryWatcher {
 	private final WatchService watcher;
 	private final Map<WatchKey, Path> keys;
+	private final Path home;
+	private final Path downloads;
 	private boolean trace;
 	
 	public DirectoryWatcher(Path source, Path... dest) throws IOException {
@@ -43,6 +48,9 @@ public class DirectoryWatcher {
 		this.keys = new HashMap<>();
 		register(source);
 		this.trace = true;
+		
+		home = Path.of(System.getProperty("user.home"));
+		downloads = home.resolve("Downloads");
 	}
 	
 	;
@@ -70,32 +78,32 @@ public class DirectoryWatcher {
 	
 	/**
 	 * In recursive situation, use walkFileTree to register all files
-	 * */
-//	private void registerAll(final Path dir) throws IOException {
-//		Files.walkFileTree(dir, new SimpleFileVisitor<Path>(){
-//			/**
-//			 * Invoked for a directory before entries in the directory are visited.
-//			 *
-//			 * <p> Unless overridden, this method returns {@link FileVisitResult#CONTINUE
-//			 * CONTINUE}.
-//			 *
-//			 * @param dir
-//			 * @param attrs
-//			 */
-//			@Override
-//			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-//				register(dir);
-//				return FileVisitResult.CONTINUE;
-//			}
-//		});
-//	}
+	 */
+	private void registerAll(final Path dir) throws IOException {
+		Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+			/**
+			 * Invoked for a directory before entries in the directory are visited.
+			 *
+			 * <p> Unless overridden, this method returns {@link FileVisitResult#CONTINUE
+			 * CONTINUE}.
+			 *
+			 * @param dir
+			 * @param attrs
+			 */
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				register(dir);
+				return FileVisitResult.CONTINUE;
+			}
+		});
+	}
 	
 	/**
 	 * Key method to sorting.
 	 * We will look at the source directory,<br>
 	 * then will move the file to the target directory or create target directory then move to it.
 	 */
-	void process(String keyword, Path destination) throws IOException {
+	void process() throws IOException {
 		for (; ; ) {
 			WatchKey key;
 			try {
@@ -121,7 +129,8 @@ public class DirectoryWatcher {
 				Path newItem = dir.resolve(name);
 				// TODO: check the file type
 				String fileType = checkFileType(newItem);
-				if(!fileType.isEmpty())	 {
+				System.out.format("%s: %s\n", event.kind().name(), newItem);
+				if (fileType != null && !fileType.isEmpty()) {
 					/**
 					 *
 					 * <ol>
@@ -132,7 +141,7 @@ public class DirectoryWatcher {
 					 *   <li>application/zip</li>
 					 * </ol>
 					 * */
-					if(fileType.contains("image")) {
+					if (fileType.contains("image")) {
 						//TODO: move the newItem to a new "image" director, create the directory if it doesn't exist.
 					}
 					// TODO: move the newItem to a target directory, create the directory if it doesn't exist.
@@ -142,26 +151,48 @@ public class DirectoryWatcher {
 			}
 		}
 	}
+	
 	/**
 	 * Check the file type such as jpg, png
 	 * return if
-	 * */
+	 */
 	String checkFileType(Path file) throws IOException {
-		if(Files.isRegularFile(file)) {
-				return Files.probeContentType(file);
+		if (Files.isRegularFile(file)) {
+			return Files.probeContentType(file);
 		}
 		return "";
 	}
+	
 	/**
 	 * Perform the move mechanism
-	 * */
-	void move(Path from, Path to) {
-		System.out.println("from "+ from);
-		System.out.println("to "+ to);
+	 */
+	void move(Path file, Path to) {
+		System.out.println("moving file " + file);
+		System.out.println("to " + to);
+		Path target = to.resolve(file.getFileName());
+		try {
+			if (!Files.isDirectory(to)) {
+				createDir(to);
+			}
+			Files.move(file, target, REPLACE_EXISTING, ATOMIC_MOVE);
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		}
 	}
-
 	
-	public static void main(String[] args) {
-	
+	void createDir(Path dirname) {
+		try {
+			Files.createDirectory(dirname);
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		}
 	}
+	
+	void moveToImagesDir(Path newImage) {
+		Path desktop = home.resolve("Desktop");
+		System.out.println(desktop);
+		Path imagesDir = desktop.resolve("images");
+		move(newImage, imagesDir);
+	}
+	
 }
