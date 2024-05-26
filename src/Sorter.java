@@ -9,13 +9,13 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
- * DirectoryWatcher will register and watch a directory
+ * Sorter will register and watch a directory
  * <br>
  * In this case it will be ~/Download
  * To keep it simple it doesn't support recursive
  * We will watch for create and modify. {@link #register(Path)}
  * <hr>
- *   <p>1. <code> java Sorter </code>  </p>
+ *   <p>1. <code> java src/Sorter.java </code>  </p>
  *   <p>Default - no args</p>
  * <p> By default, we will be watching ~/Download </p>
  *
@@ -23,13 +23,13 @@ import static java.nio.file.StandardWatchEventKinds.*;
  * then create an "images" directory if not exists on the Desktop for Mac (not sure about Windows and Linux yet).<br>
  * move the new images to the "images" directory.
  * </p>
- * <p>2. e.g.: <code>java Sorter fromDir toDir </code></p>
+ * <p>2. e.g.: <code>java src/Sorter.java fromDir toDir </code></p>
  * <p> fromDir is the where the system will register the directory,<br>
  * <p> toDir is the destination
  * if the directory is doesn't exist, system will create one.
  * </p>
  * </p>
- * <p>3. e.g.: <code>java Sorter fromDir toDir -k CST </code></p>
+ * <p>3. e.g.: <code>java src/Sorter.java fromDir toDir -k CST </code></p>
  * -k Keyword that filename contains
  * <p> With the keyword flag new file contains keyword will be moved to directory with the keyword <br>
  * if the directory is doesn't exist, system will create one.
